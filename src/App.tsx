@@ -1,12 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { parse, html } from 'diff2html/lib/diff2html';
+import { DiffFile } from 'diff2html/lib/types';
 import 'diff2html/bundles/css/diff2html.min.css';
 import './App.css';
 
 interface PatchFile {
   id: string;
   name: string;
-  content: string;
+  diffs: DiffFile[];
+}
+
+interface ChangeSummary {
+  totalFiles: number;
+  addedLines: number;
+  deletedLines: number;
 }
 
 function App() {
@@ -14,6 +21,32 @@ function App() {
   const [activeTabId, setActiveTabId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const diffContainerRef = useRef<HTMLDivElement>(null);
+
+  const generateChangeSummary = useCallback((diffs: DiffFile[]): ChangeSummary => {
+    let addedLines = 0;
+    let deletedLines = 0;
+
+    diffs.forEach(diff => {
+      const fileName = diff.newName || diff.oldName || 'Unknown';
+      
+      // Count added and deleted lines
+      diff.blocks?.forEach(block => {
+        block.lines?.forEach(line => {
+          if (line.type === 'insert') {
+            addedLines++;
+          } else if (line.type === 'delete') {
+            deletedLines++;
+          }
+        });
+      });
+    });
+
+    return {
+      totalFiles: diffs.length,
+      addedLines,
+      deletedLines,
+    };
+  }, []);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -40,7 +73,7 @@ function App() {
         newFiles.push({
           id: fileId,
           name: file.name,
-          content: content
+          diffs: parse(content)
         });
         
         filesProcessed++;
@@ -63,21 +96,18 @@ function App() {
   }, [patchFiles.length, activeTabId]);
 
   const activeFile = patchFiles.find(file => file.id === activeTabId);
+  const activeSummary = activeFile ? generateChangeSummary(activeFile.diffs) : null;
 
   // Render diff when active file changes
   useEffect(() => {
     if (activeFile && diffContainerRef.current) {
-      const parsedDiff = parse(activeFile.content);
-      console.log(parsedDiff);
-      const diffHtml = html(parsedDiff, {
+      const diffHtml = html(activeFile.diffs, {
         drawFileList: true,
         matching: 'lines',
         outputFormat: 'line-by-line',
-        synchronisedScroll: true,
         highlight: true,
         fileListToggle: false,
         fileListStartVisible: false,
-        colorScheme: 'dark'
       });
 
       diffContainerRef.current.innerHTML = diffHtml;
@@ -124,7 +154,7 @@ function App() {
                 className={`tab ${activeTabId === file.id ? 'active' : ''}`}
                 onClick={() => setActiveTabId(file.id)}
               >
-                <span className="tab-name">{file.name}</span>
+                <span className="tab-name">{file.name + ` (${file.diffs.length} files)`}</span>
                 <button
                   className="tab-close"
                   onClick={(e) => {
@@ -137,6 +167,27 @@ function App() {
               </div>
             ))}
           </div>
+          
+          {activeSummary && (
+            <div className="summary-section">
+              <h3>Summary</h3>
+              <div className="summary-stats">
+                <div className="stat-item">
+                  <span className="stat-label">Files Changed:</span>
+                  <span className="stat-value">{activeSummary.totalFiles}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Lines Added:</span>
+                  <span className="stat-value added">+{activeSummary.addedLines}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Lines Deleted:</span>
+                  <span className="stat-value deleted">-{activeSummary.deletedLines}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="diff-container" ref={diffContainerRef}>
           </div>
         </>
