@@ -104,10 +104,12 @@ function App() {
       const diffHtml = html(activeFile.diffs, {
         drawFileList: true,
         matching: 'lines',
-        outputFormat: 'line-by-line',
+        outputFormat: 'side-by-side',
         highlight: true,
         fileListToggle: false,
         fileListStartVisible: false,
+        renderNothingWhenEmpty: false,
+        synchronisedHorizontalScroll: true,
       });
 
       diffContainerRef.current.innerHTML = diffHtml;
@@ -249,7 +251,7 @@ function App() {
               </div>
             )}
           
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden max-h-[70vh] overflow-y-auto" ref={diffContainerRef}>
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden max-h-[70vh] diff-scroll-container" ref={diffContainerRef}>
             </div>
           </>
         ) : (
