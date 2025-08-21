@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+.d2h-code-linenumber {
+    position: relative;
+}
