@@ -20,7 +20,10 @@ function App() {
   const [patchFiles, setPatchFiles] = useState<PatchFile[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
   const diffContainerRef = useRef<HTMLDivElement>(null);
+  const modalDiffContainerRef = useRef<HTMLDivElement>(null);
 
   const generateChangeSummary = useCallback((diffs: DiffFile[]): ChangeSummary => {
     let addedLines = 0;
@@ -46,6 +49,34 @@ function App() {
       addedLines,
       deletedLines,
     };
+  }, []);
+
+  const getFileDiffsFromAllPatches = useCallback((fileName: string) => {
+    const fileDiffs: Array<{ patchName: string; diff: DiffFile }> = [];
+    
+    patchFiles.forEach(patchFile => {
+      const matchingDiff = patchFile.diffs.find(diff => 
+        diff.newName === fileName || diff.oldName === fileName
+      );
+      if (matchingDiff) {
+        fileDiffs.push({
+          patchName: patchFile.name,
+          diff: matchingDiff
+        });
+      }
+    });
+    
+    return fileDiffs;
+  }, [patchFiles]);
+
+  const handleFileNameClick = useCallback((fileName: string) => {
+    setSelectedFileName(fileName);
+    setIsModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedFileName('');
   }, []);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,14 +164,41 @@ function App() {
         drawFileList: true,
         matching: 'lines',
         outputFormat: 'line-by-line',
-        highlight: true,
-        fileListToggle: false,
-        fileListStartVisible: false,
       });
 
       diffContainerRef.current.innerHTML = diffHtml;
     }
   }, [activeFile]);
+
+  // Render modal diff when selected file changes
+  useEffect(() => {
+    if (selectedFileName && modalDiffContainerRef.current && isModalOpen) {
+      const fileDiffs = getFileDiffsFromAllPatches(selectedFileName);
+      
+      if (fileDiffs.length > 0) {
+        let modalContent = '';
+        
+        fileDiffs.forEach(({ patchName, diff }) => {
+          const diffHtml = html([diff], {
+            drawFileList: false,
+            matching: 'lines',
+            outputFormat: 'line-by-line',
+          });
+          
+          modalContent += `
+            <div class="mb-6">
+              <h4 class="text-lg font-semibold text-gray-800 mb-3 p-3 bg-gray-50 rounded-lg border">
+                📄 ${patchName}
+              </h4>
+              ${diffHtml}
+            </div>
+          `;
+        });
+        
+        modalDiffContainerRef.current.innerHTML = modalContent;
+      }
+    }
+  }, [selectedFileName, isModalOpen, getFileDiffsFromAllPatches]);
 
   const removeFile = useCallback((fileId: string) => {
     setPatchFiles(prev => {
@@ -232,7 +290,8 @@ function App() {
                       {combinedSummary.presentInAllPatches.map((fileName, index) => (
                         <span 
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors duration-200"
+                          onClick={() => handleFileNameClick(fileName)}
                         >
                           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -329,6 +388,38 @@ function App() {
               <h3 className="text-2xl font-bold text-gray-800 mb-4">Ready to explore patches</h3>
               <p className="text-gray-600 mb-2">Upload .patch or .diff files to view their contents</p>
               <p className="text-sm text-gray-500">You can upload up to 5 files at once</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h2 className="text-xl font-bold text-gray-800">File Diffs: {selectedFileName}</h2>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
+                <div ref={modalDiffContainerRef} className="space-y-6">
+                  {/* Diff content will be rendered here */}
+                </div>
+              </div>
             </div>
           </div>
         )}
