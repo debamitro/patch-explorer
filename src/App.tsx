@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { parse, html } from 'diff2html/lib/diff2html';
 import { DiffFile } from 'diff2html/lib/types';
+import { createTwoFilesPatch } from 'diff';
 import 'diff2html/bundles/css/diff2html.min.css';
 import './App.css';
 
@@ -178,6 +179,66 @@ function App() {
       if (fileDiffs.length > 0) {
         let modalContent = '';
         
+        // If exactly 2 diffs, show comparison between them
+        if (fileDiffs.length === 2) {
+          const [first, second] = fileDiffs;
+          
+          // Extract the final content from each diff
+          const getFileContent = (diff: DiffFile) => {
+            const lines: string[] = [];
+            diff.blocks?.forEach(block => {
+              block.lines?.forEach(line => {
+                if (line.type === 'delete' || line.type === 'insert') {
+                  lines.push(line.content.substring(1)); // Remove the +/- prefix
+                }
+              });
+            });
+            return lines.join('\n');
+          };
+          
+          const firstContent = getFileContent(first.diff);
+          const secondContent = getFileContent(second.diff);
+          
+          // Create a unified diff between the two versions using jsdiff
+          const unifiedDiff = createTwoFilesPatch(
+            `${selectedFileName} (${first.patchName})`,
+            `${selectedFileName} (${second.patchName})`,
+            firstContent,
+            secondContent,
+            undefined,
+            undefined
+          );
+          
+          try {
+            const comparisonDiff = parse(unifiedDiff);
+            const comparisonHtml = html(comparisonDiff, {
+              drawFileList: false,
+              matching: 'lines',
+              outputFormat: 'line-by-line',
+              renderNothingWhenEmpty: true,
+            });
+            
+            modalContent = `
+              <div class="mb-6">
+                <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  🔄 Comparison: ${first.patchName} → ${second.patchName}
+                </h4>
+                ${comparisonHtml}
+              </div>
+              <div class="border-t pt-6">
+                <h4 class="text-md font-semibold text-gray-600 mb-4">Individual Diffs:</h4>
+            `;
+          } catch (error) {
+            // Fallback to individual diffs if comparison fails
+            modalContent = `
+              <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800">⚠️ Could not generate comparison diff. Showing individual diffs instead.</p>
+              </div>
+            `;
+          }
+        }
+        
+        // Show individual diffs (either as fallback or in addition to comparison)
         fileDiffs.forEach(({ patchName, diff }) => {
           const diffHtml = html([diff], {
             drawFileList: false,
@@ -194,6 +255,10 @@ function App() {
             </div>
           `;
         });
+        
+        if (fileDiffs.length === 2) {
+          modalContent += '</div>'; // Close the individual diffs section
+        }
         
         modalDiffContainerRef.current.innerHTML = modalContent;
       }
