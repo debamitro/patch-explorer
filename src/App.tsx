@@ -178,6 +178,7 @@ function App() {
       
       if (fileDiffs.length > 0) {
         let modalContent = '';
+        let hasChanges = true;
         
         // If exactly 2 diffs, show comparison between them
         if (fileDiffs.length === 2) {
@@ -209,16 +210,28 @@ function App() {
             undefined
           );
           
-          try {
-            const comparisonDiff = parse(unifiedDiff);
-            const comparisonHtml = html(comparisonDiff, {
-              drawFileList: false,
-              matching: 'lines',
-              outputFormat: 'line-by-line',
-              renderNothingWhenEmpty: true,
-            });
-            
+          // Check if there are actual changes (not just headers)
+          hasChanges = unifiedDiff.includes('@@') && (unifiedDiff.includes('+') || unifiedDiff.includes('-'));
+          if (!hasChanges) {
             modalContent = `
+              <div class="mb-6">
+                <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  🔄 Comparison: ${first.patchName} → ${second.patchName}
+                </h4>
+                <p class="text-sm text-gray-600">No changes found between these two patches.</p>
+              </div>
+            `;
+          } else {
+            try {
+              const comparisonDiff = parse(unifiedDiff);
+              const comparisonHtml = html(comparisonDiff, {
+                drawFileList: false,
+                matching: 'lines',
+                outputFormat: 'line-by-line',
+                renderNothingWhenEmpty: true,
+              });
+
+              modalContent = `
               <div class="mb-6">
                 <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                   🔄 Comparison: ${first.patchName} → ${second.patchName}
@@ -228,16 +241,18 @@ function App() {
               <div class="border-t pt-6">
                 <h4 class="text-md font-semibold text-gray-600 mb-4">Individual Diffs:</h4>
             `;
-          } catch (error) {
-            // Fallback to individual diffs if comparison fails
-            modalContent = `
+            } catch (error) {
+              // Fallback to individual diffs if comparison fails
+              modalContent = `
               <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p class="text-sm text-yellow-800">⚠️ Could not generate comparison diff. Showing individual diffs instead.</p>
               </div>
             `;
+            }
           }
         }
         
+        if (hasChanges) {
         // Show individual diffs (either as fallback or in addition to comparison)
         fileDiffs.forEach(({ patchName, diff }) => {
           const diffHtml = html([diff], {
@@ -255,7 +270,7 @@ function App() {
             </div>
           `;
         });
-        
+      }
         if (fileDiffs.length === 2) {
           modalContent += '</div>'; // Close the individual diffs section
         }
