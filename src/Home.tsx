@@ -10,12 +10,6 @@ interface PatchFile {
   diffs: DiffFile[];
 }
 
-interface ChangeSummary {
-  totalFiles: number;
-  addedLines: number;
-  deletedLines: number;
-}
-
 function Home() {
   const [patchFiles, setPatchFiles] = useState<PatchFile[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
