@@ -25,30 +25,6 @@ function Home() {
   const diffContainerRef = useRef<HTMLDivElement>(null);
   const modalDiffContainerRef = useRef<HTMLDivElement>(null);
 
-  const generateChangeSummary = useCallback((diffs: DiffFile[]): ChangeSummary => {
-    let addedLines = 0;
-    let deletedLines = 0;
-
-    diffs.forEach(diff => {
-      // Count added and deleted lines
-      diff.blocks?.forEach(block => {
-        block.lines?.forEach(line => {
-          if (line.type === 'insert') {
-            addedLines++;
-          } else if (line.type === 'delete') {
-            deletedLines++;
-          }
-        });
-      });
-    });
-
-    return {
-      totalFiles: diffs.length,
-      addedLines,
-      deletedLines,
-    };
-  }, []);
-
   const getFileDiffsFromAllPatches = useCallback((fileName: string) => {
     const fileDiffs: Array<{ patchName: string; diff: DiffFile }> = [];
     
@@ -125,7 +101,6 @@ function Home() {
   }, [patchFiles.length, activeTabId]);
 
   const activeFile = patchFiles.find(file => file.id === activeTabId);
-  const activeSummary = activeFile ? generateChangeSummary(activeFile.diffs) : null;
   
   // Generate combined summary for all files
   const combinedSummary = patchFiles.length > 0 ? (() => {
@@ -408,32 +383,7 @@ function Home() {
               ))}
             </div>
           
-            {activeSummary && (
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <h3 className="text-xl font-bold text-gray-800">Summary</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">{activeSummary.totalFiles}</div>
-                    <div className="text-sm font-medium text-blue-700">Files Changed</div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
-                    <div className="text-3xl font-bold text-green-600 mb-2">+{activeSummary.addedLines}</div>
-                    <div className="text-sm font-medium text-green-700">Lines Added</div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg border border-red-100">
-                    <div className="text-3xl font-bold text-red-600 mb-2">-{activeSummary.deletedLines}</div>
-                    <div className="text-sm font-medium text-red-700">Lines Deleted</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200" ref={diffContainerRef}>
+            <div className="bg-white shadow-lg border border-gray-200 p-1" ref={diffContainerRef}>
             </div>
           </>
         ) : (
