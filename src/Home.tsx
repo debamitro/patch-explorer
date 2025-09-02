@@ -207,7 +207,7 @@ function Home() {
               modalContent = `
               <div class="mb-6">
                 <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                  🔄 Comparison: ${first.patchName} → ${second.patchName}
+                  🔄 Comparison: ${fileDiffs[0].patchName} → ${fileDiffs[1].patchName}
                 </h4>
                 ${comparisonHtml}
               </div>
@@ -215,6 +215,7 @@ function Home() {
                 <h4 class="text-md font-semibold text-gray-600 mb-4">Individual Diffs:</h4>
             `;
             } catch (error) {
+              console.error('Error generating comparison diff:', error);
               // Fallback to individual diffs if comparison fails
               modalContent = `
               <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
