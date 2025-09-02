@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from './assets/logo1.png';
 
 const About: React.FC = () => {
   return (
@@ -6,9 +7,12 @@ const About: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
         <div className="text-center mb-12">
-          <h1 className="text-7xl font-bold bg-indigo-600 bg-clip-text text-transparent mb-4">
-            Patch Explorer
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <img src={logo} alt="Patch Explorer Logo" className="w-16 h-16" />
+            <h1 className="text-7xl font-bold bg-indigo-600 bg-clip-text text-transparent">
+              Patch Explorer
+            </h1>
+          </div>
           <p className="text-gray-600 text-lg">Understand your code diffs with ease</p>
         </div>
 
@@ -30,7 +34,7 @@ const About: React.FC = () => {
 
             <section className="text-center pt-8 border-t border-gray-200">
               <p className="text-gray-500 text-sm mt-4">
-                &copy; 2025 Built with ❤️ by East Coast Software LLC
+                &copy; 2025 Built with ❤️ by <a href="https://www.eastcoastsoft.com" target="_blank" rel="noopener noreferrer">East Coast Software LLC</a>
               </p>
             </section>
           </div>

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { parse, html } from 'diff2html/lib/diff2html';
 import type { DiffFile } from 'diff2html/lib/types';
 import { createTwoFilesPatch } from 'diff';
+import logo from './assets/logo1.png';
 import 'diff2html/bundles/css/diff2html.min.css';
 
 interface PatchFile {
@@ -270,9 +271,12 @@ function Home() {
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <h1 className="text-7xl font-bold bg-indigo-600 bg-clip-text text-transparent mb-4">
-            Patch Explorer
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <img src={logo} alt="Patch Explorer Logo" className="w-16 h-16" />
+            <h1 className="text-7xl font-bold bg-indigo-600 bg-clip-text text-transparent">
+              Patch Explorer
+            </h1>
+          </div>
           <p className="text-gray-600 text-lg">Understand your code diffs with ease</p>
         </div>
         
