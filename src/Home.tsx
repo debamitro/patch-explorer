@@ -96,26 +96,61 @@ function Home() {
 
   const activeFile = patchFiles.find(file => file.id === activeTabId);
   
+  const getUnifiedDiffText = (first: {patchName: string, diff: DiffFile}, 
+    second: {patchName: string, diff: DiffFile}) => {
+          
+    // Extract the final content from each diff
+    const getFileContent = (diff: DiffFile) => {
+      const lines: string[] = [];
+      diff.blocks?.forEach(block => {
+        block.lines?.forEach(line => {
+          if (line.type === 'delete' || line.type === 'insert') {
+            lines.push(line.content.substring(1)); // Remove the +/- prefix
+          }
+        });
+      });
+      return lines.join('\n');
+    };
+    
+    const firstContent = getFileContent(first.diff);
+    const secondContent = getFileContent(second.diff);
+    
+    // Create a unified diff between the two versions using jsdiff
+    const unifiedDiff = createTwoFilesPatch(
+      `${selectedFileName} (${first.patchName})`,
+      `${selectedFileName} (${second.patchName})`,
+      firstContent,
+      secondContent,
+      undefined,
+      undefined
+    );
+    
+    // Check if there are actual changes (not just headers)
+    const hasChanges = unifiedDiff.includes('@@') && (unifiedDiff.includes('+') || unifiedDiff.includes('-'));
+    return { unifiedDiff, hasChanges };
+  };
+
   // Generate combined summary for all files
   const combinedSummary = patchFiles.length > 0 ? (() => {
-    let commonFiles: Record<string, string[]> = {};
+    let commonFiles: Record<string, {patchName: string, diff: DiffFile}[]> = {};
     patchFiles.forEach(patchFile => {
       patchFile.diffs.forEach(diff => {
         if (diff.newName) {
           if (commonFiles[diff.newName]) {
-            commonFiles[diff.newName].push(patchFile.name);
+            commonFiles[diff.newName].push({patchName: patchFile.name, diff});
           } else {
-            commonFiles[diff.newName] = [patchFile.name];
+            commonFiles[diff.newName] = [{patchName: patchFile.name, diff}];
           }
         }
       });
     });
     
 
-    let presentInAllPatches: string[] = [];
+    let presentInAllPatches: {fileName: string, isSame: boolean}[] = [];
     Object.entries(commonFiles).forEach(([fileName, patches]) => {
       if (patchFiles.length == patches.length) {
-        presentInAllPatches.push(fileName);
+        const isSame = patches.length === 2 && getUnifiedDiffText(patches[0], patches[1]).hasChanges === false;
+        presentInAllPatches.push({fileName, isSame});
       }
     });
     return {
@@ -144,41 +179,13 @@ function Home() {
       
       if (fileDiffs.length > 0) {
         let modalContent = '';
-        let hasChanges = true;
+        let showIndividualDiffs = true;
         
         // If exactly 2 diffs, show comparison between them
         if (fileDiffs.length === 2) {
-          const [first, second] = fileDiffs;
-          
-          // Extract the final content from each diff
-          const getFileContent = (diff: DiffFile) => {
-            const lines: string[] = [];
-            diff.blocks?.forEach(block => {
-              block.lines?.forEach(line => {
-                if (line.type === 'delete' || line.type === 'insert') {
-                  lines.push(line.content.substring(1)); // Remove the +/- prefix
-                }
-              });
-            });
-            return lines.join('\n');
-          };
-          
-          const firstContent = getFileContent(first.diff);
-          const secondContent = getFileContent(second.diff);
-          
-          // Create a unified diff between the two versions using jsdiff
-          const unifiedDiff = createTwoFilesPatch(
-            `${selectedFileName} (${first.patchName})`,
-            `${selectedFileName} (${second.patchName})`,
-            firstContent,
-            secondContent,
-            undefined,
-            undefined
-          );
-          
-          // Check if there are actual changes (not just headers)
-          hasChanges = unifiedDiff.includes('@@') && (unifiedDiff.includes('+') || unifiedDiff.includes('-'));
+          const { unifiedDiff, hasChanges } = getUnifiedDiffText(fileDiffs[0], fileDiffs[1]);
           if (!hasChanges) {
+            showIndividualDiffs = false;
             modalContent = `
               <div class="mb-6">
                 <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
@@ -218,7 +225,7 @@ function Home() {
           }
         }
         
-        if (hasChanges) {
+        if (showIndividualDiffs) {
         // Show individual diffs (either as fallback or in addition to comparison)
         fileDiffs.forEach(({ patchName, diff }) => {
           const diffHtml = html([diff], {
@@ -313,18 +320,35 @@ function Home() {
                 </div>
                 {combinedSummary.presentInAllPatches.length > 0 ? (
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{combinedSummary.presentInAllPatches.length} Files present in all patches:</h4>
+                    <div className="flex items-center mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700">{combinedSummary.presentInAllPatches.length} Files present in all patches:</h4>
+                      <span className="ml-2 text-xs text-gray-500 flex items-center">
+                        (<svg className="w-3 h-3 ml-1 mr-1 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg> indicates no diff)
+                      </span>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {combinedSummary.presentInAllPatches.map((fileName, index) => (
+                      {combinedSummary.presentInAllPatches.map((elem, index) => (
                         <span 
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors duration-200"
-                          onClick={() => handleFileNameClick(fileName)}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-colors duration-200 ${
+                            elem.isSame 
+                              ? 'bg-gray-100 text-gray-500 border-gray-200 opacity-75' 
+                              : 'bg-indigo-100 text-indigo-800 border-indigo-200 cursor-pointer hover:bg-indigo-200'
+                          }`}
+                          onClick={elem.isSame ? undefined : () => handleFileNameClick(elem.fileName)}
+                          title={elem.isSame ? 'No differences in this file' : 'Click to view file details'}
                         >
                           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          {fileName}
+                          {elem.fileName}
+                          {elem.isSame && (
+                            <svg className="w-3 h-3 ml-1 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
                         </span>
                       ))}
                     </div>
