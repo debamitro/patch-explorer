@@ -190,7 +190,7 @@ function Home() {
             modalContent = `
               <div class="mb-6">
                 <h4 class="text-lg font-semibold text-indigo-800 mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                  🔄 Comparison: ${first.patchName} → ${second.patchName}
+                  🔄 Comparison: ${fileDiffs[0].patchName} → ${fileDiffs[1].patchName}
                 </h4>
                 <p class="text-sm text-gray-600">No changes found between these two patches.</p>
               </div>
