@@ -13,7 +13,14 @@ const About: React.FC = () => {
               Patch Explorer
             </h1>
           </div>
-          <p className="text-gray-600 text-lg">Understand your code diffs with ease</p>
+          <p className="text-gray-600 text-lg mb-6">Understand your code diffs with ease</p>
+          
+          {/* Product Hunt Badge - Centered below tagline */}
+          <div className="flex justify-center">
+            <a href="https://www.producthunt.com/products/patch-explorer/reviews?utm_source=badge-product_review&utm_medium=badge&utm_source=badge-patch&#0045;explorer" target="_blank" rel="noopener noreferrer">
+              <img src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1104257&theme=light" alt="Patch&#0032;Explorer - Understand&#0032;multiple&#0032;code&#0032;diffs&#0032;easily | Product Hunt" width="250" height="54" className="hover:opacity-80 transition-opacity" />
+            </a>
+          </div>
         </div>
 
           <div className="space-y-8">
@@ -32,6 +39,7 @@ const About: React.FC = () => {
               </p>
             </section>
 
+            
             <section className="text-center pt-8 border-t border-gray-200">
               <p className="text-gray-500 text-sm mt-4">
                 &copy; 2025 Built with ❤️ by <a href="https://www.eastcoastsoft.com" target="_blank" rel="noopener noreferrer">East Coast Software LLC</a>

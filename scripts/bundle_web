@@ -1,0 +1,8 @@
+#!/bin/bash
+
+npm run build
+cd dist
+zip -r ../patchexplorer_web_$(date +%m%d%y).zip *
+cd ..
+
+exit 0
