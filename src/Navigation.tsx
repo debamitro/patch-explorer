@@ -20,6 +20,15 @@ const Navigation: React.FC = () => {
                               Home
                           </Link>
                           <Link
+                              to="/desktop"
+                              className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${location.pathname === '/desktop'
+                                      ? 'bg-indigo-100 text-indigo-700'
+                                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                  }`}
+                          >
+                              Desktop App
+                          </Link>
+                          <Link
                               to="/about"
                               className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${location.pathname === '/about'
                                       ? 'bg-indigo-100 text-indigo-700'
