@@ -3,6 +3,7 @@ import { parse, html } from 'diff2html/lib/diff2html';
 import type { DiffFile } from 'diff2html/lib/types';
 import { createTwoFilesPatch } from 'diff';
 import logo from './assets/logo1.png';
+import { trackPatchUpload } from './analytics';
 import 'diff2html/bundles/css/diff2html.min.css';
 
 interface PatchFile {
@@ -85,6 +86,7 @@ function Home() {
             }
             return updated;
           });
+          trackPatchUpload(files.length);
           setError('');
         }
       };
