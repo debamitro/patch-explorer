@@ -4,6 +4,7 @@ import type { DiffFile } from 'diff2html/lib/types';
 import { createTwoFilesPatch } from 'diff';
 import logo from './assets/logo1.png';
 import { trackPatchUpload } from './analytics';
+import { Link } from 'react-router-dom';
 import 'diff2html/bundles/css/diff2html.min.css';
 
 interface PatchFile {
@@ -287,8 +288,8 @@ function Home() {
           <p className="text-indigo-100 mb-4">
             Work offline, enjoy faster performance, and more!
           </p>
-          <a
-            href="/desktop"
+          <Link
+            to="/desktop"
             className="group relative inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-indigo-600 bg-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -297,7 +298,7 @@ function Home() {
               </svg>
               Download desktop app
             </span>
-          </a>
+          </Link>
         </div>
         
         <div className="flex flex-col items-center mb-8 gap-6">
